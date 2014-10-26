@@ -1,1 +1,1 @@
-web: python test.py 7000
+web: gunicorn api:app --log-file=-
