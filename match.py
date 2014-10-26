@@ -88,11 +88,13 @@ class Matcher(object):
                 result[users[i]] += ratings[i] * w
         return result.keys(), result.values()
 
-    def get_matched_persons(self, user_id, max_nums):
+    def get_matched_persons(self, user_id, max_nums, needs):
         skill_dist = self.get_skill_dist(user_id)
-        needs = self.data.get(user_id, 'needs')
-        if not needs:
+        # needs = self.data.get(user_id, 'needs')
+        needs = needs.split(',')
+        if not needs or needs == [''] or needs == ['all']:
             needs = self.data.get_all_skill_set()
+        return needs
         users_list = []
         ratings_list = []
         all_users = sets.Set()
@@ -118,6 +120,7 @@ if __name__ == "__main__":
     mt.data.init_skill_dist()
     mt.store_skill_dist(1)
     mt.store_skill_dist(2)
-    print(mt.get_matched_persons(2, 2))
+    # print(mt.get_matched_persons(2, 2, ''))
+    print(mt.get_matched_persons(2, 2, 'all'))
     pass
 

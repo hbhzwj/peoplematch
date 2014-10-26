@@ -72,6 +72,9 @@ class Data(object):
 
     def filter_skill(self, skill, max_nums):
         # return [1, 2, 3], [0.3, 0.2, 0.1]
+        all_skill_set = self.get_all_skill_set()
+        if skill not in all_skill_set:
+            return [], []
         skill = self.escape(skill, 'skill')
         query = """SELECT id, %s FROM skill_sets ORDER BY %s desc limit %i""" % \
                 (skill, skill, max_nums)
