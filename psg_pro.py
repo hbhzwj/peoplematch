@@ -83,7 +83,12 @@ class DBLoader(object):
 
 
 if __name__ == "__main__":
-     db = DBLoader()
+
+    # def __init__(self, dbname='template1', user='wangjing', host='localhost',
+    #              password='123456'):
+     db = DBLoader(dbname='d7n331rt3gahc0', user='jutwvmlolgopxw',
+                   host='ec2-54-83-199-115.compute-1.amazonaws.com',
+                   password='s2PhdUKIYrB1dx1MeCBfSADQo5')
      db.commit()
      db.load_data()
      db.commit()

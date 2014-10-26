@@ -15,7 +15,9 @@ def set_dict(d, v, w):
 
 class Matcher(object):
     def __init__(self):
-        self.data = Data()
+        self.data = Data(dbname='d7n331rt3gahc0', user='jutwvmlolgopxw',
+                   host='ec2-54-83-199-115.compute-1.amazonaws.com',
+                   password='s2PhdUKIYrB1dx1MeCBfSADQo5')
 
     def judge_skills(self, user_id, skills):
         # XXX IMPLEMENT ME
