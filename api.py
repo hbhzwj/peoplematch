@@ -10,18 +10,12 @@ todos = {
     'todo1': 'remember your milk',
 }
 class TodoSimple(restful.Resource):
-    def get(self, user_id):
-        # return {todo_id: todos[todo_id]}
-        # return 'good'
+    def get(self, user_id, max_return):
         mc = Matcher()
-        try:
-            user_id = int(user_id)
-        except:
-            return "you have entered an invalid url"
-        return json.dumps({'matched_ids':mc.get_matched_persons(user_id, 2)})
+        return json.dumps(mc.query(user_id, max_return))
 
 # api.add_resource(HelloWorld, '/')
-api.add_resource(TodoSimple, '/<string:user_id>')
+api.add_resource(TodoSimple, '/<int:user_id>/<int:max_return>')
 
 if __name__ == '__main__':
     app.run(debug=True)

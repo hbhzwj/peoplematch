@@ -98,6 +98,11 @@ class Matcher(object):
         # users = np.array(users)[idx]
         return users[0:max_nums]
 
+    def query(self, user_id, max_nums):
+        return {
+            'matched_ids': self.get_matched_persons(user_id, max_nums),
+        }
+
 if __name__ == "__main__":
     mt = Matcher()
     print(mt.get_matched_persons(1, 2))
