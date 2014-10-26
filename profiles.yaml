@@ -1,0 +1,17 @@
+linkedin:
+    - pattern: '.*/pub/dir/.*'
+      is_list: True
+      result_list: '#result-set'
+      result_item: '.vcard'
+    - pattern: '.*/in/.*'
+      is_list: False
+      name: '.full-name'
+      title: '.title'
+      location: '.locality'
+      photo_url: '#profile-picture > img'
+      summary: '#summary-item-view > .summary'
+      skills: ['.endorse-item-name-text', '.competency']
+      current_position: '.current-position > div > header > h4'
+      current_employer: '.current-position > div > header > h5'
+      past_positions: '.past-position > div > header > h4'
+      past_employers: '.past-position > div > header > h5'
