@@ -60,6 +60,7 @@ class Matcher(object):
         for token in tokens:
             d[token] += 1
 
+        # get the frequency of all skill_set keyworlds
         skill_counts = dict()
         all_skill_set = self.data.get_all_skill_set()
         for k in all_skill_set:
@@ -115,12 +116,9 @@ class Matcher(object):
             ratings_list.append(ratings)
 
         users, ratings = self.merge_users(users_list, ratings_list, all_users)
-        # print('ratings', ratings)
 
-        # idx = argsort(ratings)[::-1]
         idx = argsort(ratings)
         users = [users[i] for i in idx]
-        # users = np.array(users)[idx]
         return users[0:max_nums]
 
     def query(self, user_id, max_nums):
