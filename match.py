@@ -19,6 +19,8 @@ class Matcher(object):
                    host='ec2-54-83-199-115.compute-1.amazonaws.com',
                    password='s2PhdUKIYrB1dx1MeCBfSADQo5')
 
+        # self.data = Data()
+
     def judge_skills(self, user_id, skills):
         # XXX IMPLEMENT ME
         # the skill rate is based on the frequence of skill words in this
@@ -50,9 +52,13 @@ class Matcher(object):
 
         return skill_counts.keys(), skill_counts.values()
 
-    def store_skill_dist(self, user_id):
-        skills = self.get_skill_dist(user_id)
-        self.data.set_skill_dist(user_id, skills)
+    def store_skill_dist(self, user_ids=[]):
+        if not user_ids:
+            user_ids = self.data.get_all_user_id()
+
+        for user_id in user_ids:
+            skills = self.get_skill_dist(user_id)
+            self.data.set_skill_dist(user_id, skills)
 
     def get_skill_dist(self, user_id):
         """ each skill is a dictionary mapping skill to weight"""
@@ -115,9 +121,9 @@ class Matcher(object):
 
 if __name__ == "__main__":
     mt = Matcher()
-    mt.data.init_skill_dist()
-    mt.store_skill_dist(1)
-    mt.store_skill_dist(2)
-    print(mt.get_matched_persons(2, 2))
+    # mt.data.init_skill_dist()
+    # mt.store_skill_dist()
+    # mt.store_skill_dist(2)
+    print(mt.get_matched_persons(12, 4))
     pass
 

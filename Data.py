@@ -43,7 +43,7 @@ class Data(object):
 
     def escape(self, d, tp):
         if tp == 'skill':
-            d = ''.join(e.lower() if e.isalnum() else '' for e in d)
+            d = ''.join(e.lower() if e.isalnum() else '_' for e in d)
             return d
 
     def set_skill_dist(self, user_id, skills):
@@ -57,10 +57,22 @@ class Data(object):
                 self.cur.execute(query)
             self.conn.commit()
 
+        if len(skills) == 0:
+            return
+
+        keys = [self.escape(k, 'skill') for k in skills.keys()]
+        values = skills.values()
+        from collections import defaultdict
+        d = defaultdict(float)
+        for k, v in zip(keys, values):
+            d[k] += v
+        keys = d.keys()
+        values = d.values()
+
         query = """INSERT INTO skill_sets (id, %s) VALUES (%i, %s)""" % \
-                (','.join(self.escape(k, 'skill') for k in skills.keys()),
+                (','.join(keys),
                  user_id,
-                 ','.join(str(v) for v in skills.values()))
+                 ','.join(str(v) for v in values))
         print('query', query)
 
         self.cur.execute(query)
@@ -69,6 +81,8 @@ class Data(object):
         # print('user_id', user_id)
         # """set skill set of user_id. return a dict"""
         # pass
+
+
 
     def filter_skill(self, skill, max_nums):
         # return [1, 2, 3], [0.3, 0.2, 0.1]
@@ -93,6 +107,12 @@ class Data(object):
         rows = self.cur.fetchall()
         all_skill_set = [r[0] for r in rows if r[0] != 'id']
         return all_skill_set
+
+    def get_all_user_id(self):
+        query = """SELECT id FROM users;"""
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
+        return [r[0] for r in rows]
 
 
 class TestData(object):
