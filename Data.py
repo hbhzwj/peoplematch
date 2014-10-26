@@ -16,8 +16,10 @@ import psycopg2
 #     print "   ", row[0]
 
 class Data(object):
-    def __init__(self):
-        self.conn = psycopg2.connect("dbname='template1' user='wangjing' host='localhost' password='123456'")
+    def __init__(self, dbname='template1', user='wangjing', host='localhost',
+                 password='123456'):
+        self.conn = psycopg2.connect("dbname='%s' user='%s' host='%s' password='%s'"
+                                % (dbname, user, host, password))
         self.cur = self.conn.cursor()
 
     def get(self, user_id, field):
@@ -25,21 +27,72 @@ class Data(object):
         print(query)
         self.cur.execute(query)
         rows = self.cur.fetchall()
+        # print('rows', rows)
         # return [r[0] for r in rows]
         return rows[0][0]
 
+
+    def init_skill_dist(self):
+        asd = ['python', 'ruby', 'machinelearning', 'student', 'analysis',
+                'development']
+        asd_query = ',\n'.join(self.escape(a, 'skill') + ' real' for a in asd)
+        self.cur.execute("DROP TABLE IF EXISTS skill_sets;")
+        query = """CREATE TABLE skill_sets (id integer unique, %s);""" % (asd_query)
+        print(query)
+        self.cur.execute(query)
+
+    def escape(self, d, tp):
+        if tp == 'skill':
+            d = ''.join(e.lower() if e.isalnum() else '' for e in d)
+            return d
+
     def set_skill_dist(self, user_id, skills):
-        print('skills', skills)
-        print('user_id', user_id)
-        """set skill set of user_id. return a dict"""
-        pass
+        all_skills = self.get_all_skill_set()
+        skill_names = [self.escape(k, 'skill') for k in skills.keys()]
+        new_skills = set(skill_names) - set(all_skills)
+        if new_skills:
+            for a in new_skills:
+                # create a new column
+                query = 'ALTER TABLE skill_sets ADD COLUMN %s real NOT NULL DEFAULT(0);' % (a)
+                self.cur.execute(query)
+            self.conn.commit()
+
+        query = """INSERT INTO skill_sets (id, %s) VALUES (%i, %s)""" % \
+                (','.join(self.escape(k, 'skill') for k in skills.keys()),
+                 user_id,
+                 ','.join(str(v) for v in skills.values()))
+        print('query', query)
+
+        self.cur.execute(query)
+        self.conn.commit()
+        # print('skills', skills)
+        # print('user_id', user_id)
+        # """set skill set of user_id. return a dict"""
+        # pass
 
     def filter_skill(self, skill, max_nums):
-        return [1, 2, 3], [0.3, 0.2, 0.1]
+        # return [1, 2, 3], [0.3, 0.2, 0.1]
+        skill = self.escape(skill, 'skill')
+        query = """SELECT id, %s FROM skill_sets ORDER BY %s desc limit %i""" % \
+                (skill, skill, max_nums)
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
+        ids = []
+        ratings = []
+        for i, r in rows:
+            if not r: break
+            ids.append(i)
+            ratings.append(r)
+        return ids, ratings
 
     def get_all_skill_set(self):
-        return ['python', 'ruby', 'machine learning', 'student', 'analysis',
-                'development']
+        # return None
+        query = """SELECT column_name FROM information_schema.columns where
+                   table_name='skill_sets'"""
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
+        all_skill_set = [r[0] for r in rows if r[0] != 'id']
+        return all_skill_set
 
 
 class TestData(object):

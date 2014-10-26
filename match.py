@@ -75,6 +75,7 @@ class Matcher(object):
             confirmed_skills = confirmed_skills.rsplit(',')
             set_dict(skills, confirmed_skills, [1] * len(confirmed_skills))
 
+        print('skills', skills)
         return skills
 
     def merge_users(self, users_list, ratings_list, all_users):
@@ -88,6 +89,8 @@ class Matcher(object):
     def get_matched_persons(self, user_id, max_nums):
         skill_dist = self.get_skill_dist(user_id)
         needs = self.data.get(user_id, 'needs')
+        if not needs:
+            needs = self.data.get_all_skill_set()
         users_list = []
         ratings_list = []
         all_users = sets.Set()
@@ -110,6 +113,7 @@ class Matcher(object):
 
 if __name__ == "__main__":
     mt = Matcher()
+    mt.data.init_skill_dist()
     mt.store_skill_dist(1)
     mt.store_skill_dist(2)
     print(mt.get_matched_persons(2, 2))
