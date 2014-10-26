@@ -43,7 +43,8 @@ class Data(object):
 
     def escape(self, d, tp):
         if tp == 'skill':
-            d = ''.join(e.lower() if e.isalnum() else '_' for e in d)
+            d = ''.join(e.lower() if e.isalnum() else '' for e in d)
+            # return ','.join(v.rsplit('\n')[0] for v in d.get(field, '').rsplit(','))
             return d
 
     def set_skill_dist(self, user_id, skills):
