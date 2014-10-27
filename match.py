@@ -4,7 +4,7 @@
 
 from __future__ import print_function, division, absolute_import
 import sets
-from Data import Data
+from data_source import Data
 
 # import numpy as np
 def argsort(seq):
