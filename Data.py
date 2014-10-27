@@ -3,19 +3,6 @@ from __future__ import print_function, division, absolute_import
 import psycopg2
 from util import escape_keyword as ek
 
-# try:
-# conn = psycopg2.connect("dbname='template1' user='wangjing' host='localhost' password='123456'")
-# except:
-#     print "I am unable to connect to the database"
-
-# cur = conn.cursor()
-# cur.execute("""SELECT datname from pg_database""")
-# rows = cur.fetchall()
-
-# print "\nShow me the databases:\n"
-# for row in rows:
-#     print "   ", row[0]
-
 class Data(object):
     def __init__(self, dbname='template1', user='wangjing', host='localhost',
                  password='123456'):
