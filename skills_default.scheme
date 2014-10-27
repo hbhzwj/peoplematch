@@ -1,0 +1,6 @@
+id integer unique
+python integer
+ruby integer
+machinelearning integer
+student integer
+analysis integer

@@ -3,42 +3,68 @@ from __future__ import print_function, division, absolute_import
 import psycopg2
 from util import escape_keyword as ek
 
-class Data(object):
-    def __init__(self, dbname='template1', user='wangjing', host='localhost',
-                 password='123456'):
-        self.conn = psycopg2.connect("dbname='%s' user='%s' host='%s' password='%s'"
-                                % (dbname, user, host, password))
-        self.cur = self.conn.cursor()
+class Table(object):
+    def __init__(self, conn, table_name, scheme):
+        self.conn = conn
+        self.cur = conn.cursor()
+        self.table_name = table_name
+        self.scheme = scheme
 
-    def get(self, user_id, field):
-        query = 'SELECT %s FROM users WHERE id=%i;' % (field, user_id)
+    def init_table(self):
+        self.cur.execute("DROP TABLE IF EXISTS %s;" % (self.table_name))
+        fields = ','.join(name + ' ' + tp for name, tp in self.scheme)
+        query = """CREATE TABLE %s (%s);""" % (self.table_name, fields)
+        self.cur.execute(query)
+        self.conn.commit()
         print(query)
+
+    def get_col_names(self):
+        query = """SELECT column_name FROM information_schema.columns where
+                   table_name='%s'""" % (self.table_name)
         self.cur.execute(query)
         rows = self.cur.fetchall()
-        # print('rows', rows)
-        # return [r[0] for r in rows]
-        return rows[0][0]
+        return [r[0] for r in rows]
 
-
-    def init_skill_dist(self):
-        asd = ['python', 'ruby', 'machinelearning', 'student', 'analysis',
-                'development']
-        asd_query = ',\n'.join(ek(a) + ' real' for a in asd)
-        self.cur.execute("DROP TABLE IF EXISTS skill_sets;")
-        query = """CREATE TABLE skill_sets (id integer unique, %s);""" % (asd_query)
-        print(query)
+    def add_col(self, col_name, tp='real', desc='NOT NULL', default='DEFAULT(0)'):
+        query = 'ALTER TABLE %s ADD COLUMN %s %s %s %s;' %\
+                (self.table_name, col_name, tp, desc, default)
         self.cur.execute(query)
 
+    def select(self, row, col):
+        query = 'SELECT %s FROM %s WHERE %s;' % (col, self.table_name, row)
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
+        return rows
+
+
+
+class UserTable(Table):
+    # def __init__(self, dbname='template1', user='wangjing', host='localhost',
+    #              password='123456'):
+    #     self.conn = psycopg2.connect("dbname='%s' user='%s' host='%s' password='%s'"
+    #                             % (dbname, user, host, password))
+        # self.cur = self.conn.cursor()
+
+    def get(self, user_id, field):
+        rows = self.select('id=%i' % (user_id), field)
+        return rows[0][0]
+
+    def get_all_user_id(self):
+        query = """SELECT id FROM users;"""
+        self.cur.execute(query)
+        rows = self.cur.fetchall()
+        return [r[0] for r in rows]
+
+
+class SkillTable(Table):
     def set_skill_dist(self, user_id, skills):
+        print('user_id', user_id)
         all_skills = self.get_all_skill_set()
         skill_names = [ek(k) for k in skills.keys()]
         new_skills = set(skill_names) - set(all_skills)
-        if new_skills:
-            for a in new_skills:
-                # create a new column
-                query = 'ALTER TABLE skill_sets ADD COLUMN %s real NOT NULL DEFAULT(0);' % (a)
-                self.cur.execute(query)
-            self.conn.commit()
+        for a in new_skills:
+            self.add_col(a, tp='real', desc='NOT NULL', default='DEFAULT(0)')
+            # self.conn.commit()
 
         if len(skills) == 0:
             return
@@ -52,23 +78,16 @@ class Data(object):
         keys = d.keys()
         values = d.values()
 
-        query = """INSERT INTO skill_sets (id, %s) VALUES (%i, %s)""" % \
-                (','.join(keys),
+        query = """INSERT INTO %s (id, %s) VALUES (%i, %s)""" % \
+                (self.table_name, ','.join(keys),
                  user_id,
                  ','.join(str(v) for v in values))
         print('query', query)
 
         self.cur.execute(query)
         self.conn.commit()
-        # print('skills', skills)
-        # print('user_id', user_id)
-        # """set skill set of user_id. return a dict"""
-        # pass
-
-
 
     def filter_skill(self, skill, max_nums):
-        # return [1, 2, 3], [0.3, 0.2, 0.1]
         skill = ek(skill)
         query = """SELECT id, %s FROM skill_sets ORDER BY %s desc limit %i""" % \
                 (skill, skill, max_nums)
@@ -83,19 +102,9 @@ class Data(object):
         return ids, ratings
 
     def get_all_skill_set(self):
-        # return None
-        query = """SELECT column_name FROM information_schema.columns where
-                   table_name='skill_sets'"""
-        self.cur.execute(query)
-        rows = self.cur.fetchall()
-        all_skill_set = [r[0] for r in rows if r[0] != 'id']
-        return all_skill_set
-
-    def get_all_user_id(self):
-        query = """SELECT id FROM users;"""
-        self.cur.execute(query)
-        rows = self.cur.fetchall()
-        return [r[0] for r in rows]
+        col_names = self.get_col_names()
+        col_names.remove('id')
+        return col_names
 
 
 class TestData(object):

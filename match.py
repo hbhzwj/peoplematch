@@ -3,8 +3,10 @@
 # analyze_bio
 
 from __future__ import print_function, division, absolute_import
+import psycopg2
 import sets
-from data_source import Data
+from data_source import UserTable, SkillTable
+from util import load_scheme
 
 # import numpy as np
 def argsort(seq):
@@ -14,8 +16,14 @@ def set_dict(d, v, w):
     d.update(dict(zip(v, w)))
 
 class Matcher(object):
-    def __init__(self):
-        self.data = Data()
+    def __init__(self, conn):
+        self.table = {
+            'user': UserTable(conn, 'users', load_scheme('users.scheme')),
+            'skill': SkillTable(conn, 'skills', load_scheme('skills_default.scheme'))
+        }
+
+    def init_table(self, table_name):
+        self.table[table_name].init_table()
 
     def judge_skills(self, user_id, skills):
         # XXX IMPLEMENT ME
@@ -24,11 +32,7 @@ class Matcher(object):
         return [1] * len(skills)
 
     def analyze_bio(self, bio):
-        # XXX IMPLEMENT ME
-        # identify skills from bio. identify some interesting topics from bio.
-        # cv = sklearn.feature_extraction.text.CountVectorizer()
-        # cv.fit_transform(bio)
-        # import ipdb;ipdb.set_trace()
+        st = self.table['skill']
         no_special_char_bio = ''.join(e if e.isalnum() else ' ' for e in bio)
 
         # count frequency in tokens
@@ -40,7 +44,7 @@ class Matcher(object):
 
         # get the frequency of all skill_set keyworlds
         skill_counts = dict()
-        all_skill_set = self.data.get_all_skill_set()
+        all_skill_set = st.get_all_skill_set()
         for k in all_skill_set:
             tmp = d.get(k, 0)
             if tmp:
@@ -48,33 +52,36 @@ class Matcher(object):
 
         return skill_counts.keys(), skill_counts.values()
 
-    def store_skill_dist(self, user_ids=[]):
+    def propagate_skill(self, user_ids=[]):
+        ut = self.table['user']
+        st = self.table['skill']
         if not user_ids:
-            user_ids = self.data.get_all_user_id()
+            user_ids = ut.get_all_user_id()
 
         for user_id in user_ids:
             skills = self.get_skill_dist(user_id)
-            self.data.set_skill_dist(user_id, skills)
+            st.set_skill_dist(user_id, skills)
 
     def get_skill_dist(self, user_id):
         """ each skill is a dictionary mapping skill to weight"""
+        ut = self.table['user']
         skills = dict()
 
         # analyze skills
-        bio = self.data.get(user_id, 'bio')
+        bio = ut.get(user_id, 'bio')
         if bio:
             bio_skills, bio_skills_weights = self.analyze_bio(bio)
             set_dict(skills, bio_skills, bio_skills_weights)
 
         # check user boasted skills
-        boasted_skills = self.data.get(user_id, 'skills')
+        boasted_skills = ut.get(user_id, 'skills')
         if boasted_skills:
             boasted_skills = boasted_skills.rsplit(',')
             skill_weights = self.judge_skills(user_id, boasted_skills)
             set_dict(skills, boasted_skills, skill_weights)
 
         # skills confirmed by user's friends
-        confirmed_skills = self.data.get(user_id, 'confirmed_skills')
+        confirmed_skills = ut.get(user_id, 'confirmed_skills')
         if confirmed_skills:
             confirmed_skills = confirmed_skills.rsplit(',')
             set_dict(skills, confirmed_skills, [1] * len(confirmed_skills))
@@ -91,15 +98,18 @@ class Matcher(object):
         return result.keys(), result.values()
 
     def get_matched_persons(self, user_id, max_nums):
+        ut = self.table['user']
+        st = self.table['skill']
+
         skill_dist = self.get_skill_dist(user_id)
-        needs = self.data.get(user_id, 'needs')
+        needs = ut.get(user_id, 'needs')
         if not needs:
-            needs = self.data.get_all_skill_set()
+            needs = st.get_all_skill_set()
         users_list = []
         ratings_list = []
         all_users = sets.Set()
         for skill in needs:
-            users, ratings = self.data.filter_skill(skill, max_nums)
+            users, ratings = st.filter_skill(skill, max_nums)
             all_users = all_users.union(users)
             users_list.append(users)
             ratings_list.append(ratings)
@@ -116,10 +126,12 @@ class Matcher(object):
         }
 
 if __name__ == "__main__":
-    mt = Matcher()
-    # mt.data.init_skill_dist()
-    # mt.store_skill_dist()
-    # mt.store_skill_dist(2)
-    print(mt.get_matched_persons(12, 4))
+    conn = psycopg2.connect("dbname='template1'"
+                            " user='wangjing' host='localhost'"
+                            " password='123456'")
+    mt = Matcher(conn)
+    # mt.init_table('skill')
+    # mt.propagate_skill()
+    print(mt.get_matched_persons(12, 10))
     pass
 
