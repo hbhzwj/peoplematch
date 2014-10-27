@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, division, absolute_import
 import psycopg2
+from util import escape_keyword as ek
 
 # try:
 # conn = psycopg2.connect("dbname='template1' user='wangjing' host='localhost' password='123456'")
@@ -35,21 +36,15 @@ class Data(object):
     def init_skill_dist(self):
         asd = ['python', 'ruby', 'machinelearning', 'student', 'analysis',
                 'development']
-        asd_query = ',\n'.join(self.escape(a, 'skill') + ' real' for a in asd)
+        asd_query = ',\n'.join(ek(a) + ' real' for a in asd)
         self.cur.execute("DROP TABLE IF EXISTS skill_sets;")
         query = """CREATE TABLE skill_sets (id integer unique, %s);""" % (asd_query)
         print(query)
         self.cur.execute(query)
 
-    def escape(self, d, tp):
-        if tp == 'skill':
-            d = ''.join(e.lower() if e.isalnum() else '' for e in d)
-            # return ','.join(v.rsplit('\n')[0] for v in d.get(field, '').rsplit(','))
-            return d
-
     def set_skill_dist(self, user_id, skills):
         all_skills = self.get_all_skill_set()
-        skill_names = [self.escape(k, 'skill') for k in skills.keys()]
+        skill_names = [ek(k) for k in skills.keys()]
         new_skills = set(skill_names) - set(all_skills)
         if new_skills:
             for a in new_skills:
@@ -61,7 +56,7 @@ class Data(object):
         if len(skills) == 0:
             return
 
-        keys = [self.escape(k, 'skill') for k in skills.keys()]
+        keys = [ek(k) for k in skills.keys()]
         values = skills.values()
         from collections import defaultdict
         d = defaultdict(float)
@@ -87,7 +82,7 @@ class Data(object):
 
     def filter_skill(self, skill, max_nums):
         # return [1, 2, 3], [0.3, 0.2, 0.1]
-        skill = self.escape(skill, 'skill')
+        skill = ek(skill)
         query = """SELECT id, %s FROM skill_sets ORDER BY %s desc limit %i""" % \
                 (skill, skill, max_nums)
         self.cur.execute(query)
