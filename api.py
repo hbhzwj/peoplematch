@@ -3,6 +3,7 @@ from flask.ext import restful
 from match import Matcher
 import json
 import psycopg2
+import os
 
 app = Flask(__name__)
 api = restful.Api(app)
@@ -12,9 +13,14 @@ todos = {
 }
 class TodoSimple(restful.Resource):
     def get(self, user_id, max_return):
-        conn = psycopg2.connect("dbname='template1'"
-                                " user='wangjing' host='localhost'"
-                                " password='123456'")
+        try:
+            oe = os.environ
+            conn = psycopg2.connect(database=oe['DB_NAME'],
+                                    user=oe['DB_USER'],
+                                    password=oe['DB_PASSWORD'],
+                                    host=oe['DB_HOST'])
+        except Exception as e:
+            return str(e)
         mc = Matcher(conn)
         return json.dumps(mc.query(user_id, max_return))
 
