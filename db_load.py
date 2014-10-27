@@ -4,11 +4,18 @@ import psycopg2
 import json
 import glob
 import os
+import logging
 
 class DBLoader(object):
-    def __init__(self, dbname='template1', user='wangjing', host='localhost',
-                 password='123456'):
+    def __init__(self, dbname, user, host, password):
         # conn = psycopg2.connect("dbname='template1' user='wangjing' host='localhost' password='123456'")
+        self.log = logging.getLogger(self.__class__.__name__)
+        hdlr = logging.FileHandler('/var/tmp/myapp.log')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        hdlr.setFormatter(formatter)
+        self.log.addHandler(hdlr)
+        self.log.setLevel(logging.INFO)
+
         self.conn = psycopg2.connect("dbname='%s' user='%s' host='%s' password='%s'"
                                 % (dbname, user, host, password))
         self.cur = self.conn.cursor()
@@ -38,7 +45,7 @@ class DBLoader(object):
     jobs varchar(50),
     past_employers varchar(500),
     confirmed_skills varchar(300));"""
-        print(query)
+        # print(query)
         self.cur.execute(query)
 
     def load_data(self):
@@ -51,10 +58,11 @@ class DBLoader(object):
             # print('data', p_data)
             f.close()
             self.write(p_data, i)
+            self.log.info('finish ' + str(p_data))
 
     def g(self, d, field):
         if field == 'skills':
-            return ','.join(v.rsplit('\n')[0] for v in d.get(field, '').rsplit(','))
+            return ','.join(v.rsplit('\n')[0].lower() for v in d.get(field, '').rsplit(','))
         return d.get(field, '').replace("'", '')
 
 
@@ -83,15 +91,21 @@ class DBLoader(object):
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='write json data to postgreSQL')
+    parser.add_argument('--dbname', help='database name')
+    parser.add_argument('--user', help='user name')
+    parser.add_argument('--host', help='host name')
+    parser.add_argument('--password', help='password')
 
-    # def __init__(self, dbname='template1', user='wangjing', host='localhost',
-    #              password='123456'):
-     db = DBLoader(dbname='d7n331rt3gahc0', user='jutwvmlolgopxw',
-                   host='ec2-54-83-199-115.compute-1.amazonaws.com',
-                   password='s2PhdUKIYrB1dx1MeCBfSADQo5')
-     db.commit()
-     db.load_data()
-     db.commit()
+    args = parser.parse_args()
+
+    db = DBLoader(dbname=args.dbname, user=args.user, host=args.host,
+                  password=args.password)
+
+    db.commit()
+    db.load_data()
+    db.commit()
 
 
 
